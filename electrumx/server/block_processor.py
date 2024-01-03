@@ -328,17 +328,17 @@ class TimeManager:
         self.start_check = 0
         self.all_check = 0
     def print_detail(self,height,tx_len,arc20_tx_in_block):
-        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} arc={arc20_tx_in_block} '
-              f'all={(time.time()-self.start_all_time)*1000:.2f} '
-              f'utxo-all={self.all_utxo*1000:.2f} '
-              f'utxo={self.all_spend_utxo*1000:.2f} '
-              f'utxo-arc={self.all_spend_arc20*1000:.2f} '
-              f'jiexi={self.all_jiexi*1000:.2f} '
-              f'transfer={self.all_transfer*1000:.2f} '
-              f'mint={self.all_mint*1000:.2f} '
-              f'create={self.all_create*1000:.2f} '
-              f'dat={self.all_dat*1000:.2f} '
-              f'check={self.all_check*1000:.2f} ')
+        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} all_tx_len={tx_len} arc_tx_len={arc20_tx_in_block} '
+              f'all={(time.time()-self.start_all_time)*1000:.0f} '
+              f'spend_utxo={self.all_utxo*1000:.0f} '
+              f'utxo_normal={self.all_spend_utxo*1000:.0f} '
+              f'utxo-arc={self.all_spend_arc20*1000:.0f} '
+              f'jiexi={self.all_jiexi*1000:.0f} '
+              f'transfer={self.all_transfer*1000:.0f} '
+              f'mint={self.all_mint*1000:.0f} '
+              f'create={self.all_create*1000:.0f} '
+              f'dat={self.all_dat*1000:.0f} '
+              f'check={self.all_check*1000:.0f} ')
         self.clear()
 
 
