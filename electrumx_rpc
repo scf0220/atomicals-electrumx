@@ -104,8 +104,10 @@ def main():
         parts = line.strip().split()
         row = {}
         for part in parts:
-            key, value = part.split('=')
-            row[key] = float(value) if '.' in value else int(value)
+            # 检查是否包含 '='
+            if '=' in part:
+                key, value = part.split('=')
+                row[key] = float(value) if '.' in value else int(value)
         data.append(row)
 
     # 创建DataFrame
