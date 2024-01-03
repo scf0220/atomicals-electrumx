@@ -991,8 +991,12 @@ class BlockProcessor:
             atomical_id = atomical_i_db_key[1 + ATOMICAL_ID_LEN:]
             prefix = b'a' + atomical_id + location_id
             found_at_least_one = False
+            cnt=0
             for atomical_a_db_key, atomical_a_db_value in self.db.utxo_db.iterator(prefix=prefix):
+                cnt+=1
                 found_at_least_one = True
+            if found_at_least_one:
+                print(f'scf-found_at_least_one {cnt}')
             # For live_run == True we must throw an exception since the b'a' record should always be there when we are spending
             if live_run and found_at_least_one == False: 
                 raise IndexError(f'Did not find expected at least one entry for atomicals table for atomical: {location_id_bytes_to_compact(atomical_id)} at location {location_id_bytes_to_compact(location_id)}')
