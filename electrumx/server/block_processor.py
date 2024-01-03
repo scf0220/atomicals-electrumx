@@ -1020,7 +1020,8 @@ class BlockProcessor:
                 cnt+=1
                 found_at_least_one = True
             if found_at_least_one:
-                print(f'scf-found_at_least_one {cnt}')
+                if cnt!=1:
+                    print(f'scf-found_at_least_one {cnt}')
             # For live_run == True we must throw an exception since the b'a' record should always be there when we are spending
             if live_run and found_at_least_one == False: 
                 raise IndexError(f'Did not find expected at least one entry for atomicals table for atomical: {location_id_bytes_to_compact(atomical_id)} at location {location_id_bytes_to_compact(location_id)}')
