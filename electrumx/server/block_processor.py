@@ -305,8 +305,8 @@ class TimeManager:
 
         self.start_check = 0
         self.all_check = 0
-    def print_detail(self,height):
-        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} '
+    def print_detail(self,height,tx_len):
+        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} '
               f'all={(time.time()-self.start_all_time)*1000:.2f} '
               f'utxo={self.all_utxo*1000:.2f} '
               f'jiexi={self.all_jiexi*1000:.2f} '
@@ -3076,7 +3076,7 @@ class BlockProcessor:
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
             tm.check_end()
             self.logger.info(f'height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
-            tm.print_detail(height)
+            tm.print_detail(height,len(txs))
         
         return undo_info, atomicals_undo_info
     
