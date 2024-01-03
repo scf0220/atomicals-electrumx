@@ -19,7 +19,6 @@ from os import environ
 from aiorpcx import timeout_after, connect_rs
 import electrumx.lib.text as text
 
-
 simple_commands = {
     'getinfo': 'Print a summary of server state',
     'groups': 'Print current session groups',
@@ -107,14 +106,16 @@ def main():
             # 检查是否包含 '='
             if '=' in part:
                 key, value = part.split('=')
-                row[key] = float(value) if '.' in value else int(value)
+                # 检查是否是日期时间字符串
+                if key == 'ts':
+                    continue
+                else:
+                    value = float(value) if '.' in value else int(value)
+                row[key] = value
         data.append(row)
 
     # 创建DataFrame
     df = pd.DataFrame(data)
-
-    # 将数据写入Excel文件
-    df.to_excel('output.xlsx', index=False)
 
 
 if __name__ == '__main__':
