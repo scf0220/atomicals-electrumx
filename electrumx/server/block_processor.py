@@ -226,6 +226,12 @@ class TimeManager:
         self.start_utxo=0
         self.all_utxo=0
 
+        self.start_spend_utxo=0
+        self.all_spend_utxo=0
+
+        self.start_spend_arc20=0
+        self.all_spend_arc20=0
+
         self.start_jiexi=0
         self.all_jiexi=0
 
@@ -251,6 +257,16 @@ class TimeManager:
         self.start_utxo=time.time()
     def utxo_end(self):
         self.all_utxo+=(time.time()-self.start_utxo)
+
+    def spend_utxo_start(self):
+        self.start_spend_utxo=time.time()
+    def spend_utxo_end(self):
+        self.all_spend_utxo+=(time.time()-self.start_spend_utxo)
+
+    def spend_arc20_start(self):
+        self.start_spend_arc20=time.time()
+    def spend_arc20_end(self):
+        self.all_spend_arc20+=(time.time()-self.start_spend_arc20)
 
     def jiexi_start(self):
         self.start_jiexi=time.time()
@@ -288,6 +304,12 @@ class TimeManager:
         self.start_utxo = 0
         self.all_utxo = 0
 
+        self.start_spend_utxo=0
+        self.all_spend_utxo=0
+
+        self.start_spend_arc20=0
+        self.all_spend_arc20=0
+
         self.start_jiexi = 0
         self.all_jiexi = 0
 
@@ -306,9 +328,11 @@ class TimeManager:
         self.start_check = 0
         self.all_check = 0
     def print_detail(self,height,tx_len,arc20_tx_in_block):
-        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} arc20_len={arc20_tx_in_block} '
+        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} arc={arc20_tx_in_block} '
               f'all={(time.time()-self.start_all_time)*1000:.2f} '
-              f'utxo={self.all_utxo*1000:.2f} '
+              f'utxo-all={self.all_utxo*1000:.2f} '
+              f'utxo={self.all_spend_utxo*1000:.2f} '
+              f'utxo-arc={self.all_spend_arc20*1000:.2f} '
               f'jiexi={self.all_jiexi*1000:.2f} '
               f'transfer={self.all_transfer*1000:.2f} '
               f'mint={self.all_mint*1000:.2f} '
@@ -2937,14 +2961,18 @@ class BlockProcessor:
             for txin in tx.inputs:
                 if txin.is_generation():
                     continue
+                tm.spend_utxo_start()
                 cache_value = spend_utxo(txin.prev_hash, txin.prev_idx)
+                tm.spend_utxo_end()
                 undo_info_append(cache_value)
                 append_hashX(cache_value[:HASHX_LEN])
                 
                 # Only search and spend atomicals utxos if activated
                 if self.is_atomicals_activated(height):
                     # Find all the existing transferred atomicals and spend the Atomicals utxos
+                    tm.spend_arc20_start()
                     atomicals_transferred_list = spend_atomicals_utxo(txin.prev_hash, txin.prev_idx, True)
+                    tm.spend_arc20_end()
                     if len(atomicals_transferred_list):
                         atomicals_spent_at_inputs[txin_index] = atomicals_transferred_list
                         for atomical_spent in atomicals_transferred_list:
