@@ -305,8 +305,8 @@ class TimeManager:
 
         self.start_check = 0
         self.all_check = 0
-    def print_detail(self,height,tx_len):
-        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} '
+    def print_detail(self,height,tx_len,arc20_tx_in_block):
+        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} tx_len={tx_len} arc20_len={arc20_tx_in_block} '
               f'all={(time.time()-self.start_all_time)*1000:.2f} '
               f'utxo={self.all_utxo*1000:.2f} '
               f'jiexi={self.all_jiexi*1000:.2f} '
@@ -3031,7 +3031,7 @@ class BlockProcessor:
                 if not already_found_valid_operation:
                     if self.create_or_delete_data_location(tx_hash, atomicals_operations_found_at_inputs):
                         has_at_least_one_valid_atomicals_operation = True
-                        already_found_valid_operation = True 
+                        already_found_valid_operation = True
 
                 # Note: We do not skip checking for payment tx's even if already_found_valid_operation = True because there could be valid mints
                 # in one and the same tx as making a payment. It's not advisable to do so, but it's a valid possibility
@@ -3071,6 +3071,7 @@ class BlockProcessor:
         self.db.history.add_unflushed(hashXs_by_tx, self.tx_count)
         self.tx_count = tx_num
         self.db.tx_counts.append(tx_num)
+        arc20_tx_in_block=atomical_num-self.atomical_count
         self.atomical_count = atomical_num
         self.db.atomical_counts.append(atomical_num)
             
@@ -3080,7 +3081,7 @@ class BlockProcessor:
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
             tm.check_end()
             self.logger.info(f'height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
-            tm.print_detail(height,len(txs))
+            tm.print_detail(height,len(txs),arc20_tx_in_block)
         
         return undo_info, atomicals_undo_info
     
@@ -3490,7 +3491,7 @@ class BlockProcessor:
             atomicals_value = atomicals_undo_item[ATOMICAL_ID_LEN + ATOMICAL_ID_LEN :]
             # There can be many atomicals at the same location
             # Group them by the location
-            if atomicals_undo_info_map.get(atomicals_location, None) == None:
+            if atomicals_undo_info_map.get(atomicals_location, None) is None:
                 atomicals_undo_info_map[atomicals_location] = []
             atomicals_undo_info_map[atomicals_location].append({ 
                 'location_id': atomicals_location,
@@ -3584,7 +3585,7 @@ class BlockProcessor:
                 touched.add(hashX)
                 # Restore the atomicals utxos in the undo information
                 potential_atomicals_list_to_restore = atomicals_undo_info_map.get(txin.prev_hash + pack_le_uint32(txin.prev_idx))
-                if potential_atomicals_list_to_restore != None:
+                if potential_atomicals_list_to_restore is not None:
                     for atomical_to_restore in potential_atomicals_list_to_restore:
                         atomical_id = atomical_to_restore['atomical_id']
                         location_id = atomical_to_restore['location_id']
