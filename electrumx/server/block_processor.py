@@ -2924,6 +2924,7 @@ class BlockProcessor:
         # Speed up distmint processing by caching the ticker mint request info
         distmint_ticker_cache = {}
         dft_count = 0
+        arc20_cnt=0
         for tx, tx_hash in txs:
             tm.utxo_start()
             has_at_least_one_valid_atomicals_operation = False
@@ -3057,6 +3058,7 @@ class BlockProcessor:
 
                 if has_at_least_one_valid_atomicals_operation:
                     put_general_data(b'th' + pack_le_uint32(height) + pack_le_uint64(tx_num) + tx_hash, tx_hash)
+                    arc20_cnt+=1
                 tm.dat_end()
             append_hashXs(hashXs)
             update_touched(hashXs)
@@ -3071,7 +3073,6 @@ class BlockProcessor:
         self.db.history.add_unflushed(hashXs_by_tx, self.tx_count)
         self.tx_count = tx_num
         self.db.tx_counts.append(tx_num)
-        arc20_tx_in_block=atomical_num-self.atomical_count
         self.atomical_count = atomical_num
         self.db.atomical_counts.append(atomical_num)
             
@@ -3081,7 +3082,7 @@ class BlockProcessor:
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
             tm.check_end()
             self.logger.info(f'height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
-            tm.print_detail(height,len(txs),arc20_tx_in_block)
+            tm.print_detail(height,len(txs),arc20_cnt)
         
         return undo_info, atomicals_undo_info
     
