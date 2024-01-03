@@ -10,6 +10,7 @@
 
 import asyncio
 import time
+from datetime import datetime
 from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Type
 
 from aiorpcx import run_in_thread, CancelledError
@@ -217,6 +218,107 @@ class Prefetcher:
 class ChainError(Exception):
     '''Raised on error processing blocks.'''
 
+
+class TimeManager:
+    def __init__(self):
+        self.start_all_time=0
+
+        self.start_utxo=0
+        self.all_utxo=0
+
+        self.start_jiexi=0
+        self.all_jiexi=0
+
+        self.start_transfer=0
+        self.all_transfer=0
+
+        self.start_mint=0
+        self.all_mint=0
+
+        self.start_create = 0
+        self.all_create=0
+
+        self.start_dat=0
+        self.all_dat=0
+        self.start_check=0
+        self.all_check=0
+
+
+    def all_start(self):
+        self.start_all_time=time.time()
+
+    def utxo_start(self):
+        self.start_utxo=time.time()
+    def utxo_end(self):
+        self.all_utxo+=(time.time()-self.start_utxo)
+
+    def jiexi_start(self):
+        self.start_jiexi=time.time()
+    def jiexi_end(self):
+        self.all_jiexi+=(time.time()-self.start_jiexi)
+
+    def transfer_start(self):
+        self.start_transfer=time.time()
+    def transfer_end(self):
+        self.all_transfer+=(time.time()-self.start_transfer)
+
+    def mint_start(self):
+        self.start_mint=time.time()
+    def mint_end(self):
+        self.all_mint+=(time.time()-self.start_mint)
+
+    def create_start(self):
+        self.start_creat=time.time()
+    def create_end(self):
+        self.all_create+=(time.time()-self.start_creat)
+
+    def dat_start(self):
+        self.start_dat=time.time()
+    def dat_end(self):
+        self.all_dat+=(time.time()-self.start_dat)
+
+    def check_start(self):
+        self.start_check=time.time()
+
+    def check_end(self):
+        self.all_check+=(time.time()-self.start_check)
+    def clear(self):
+        self.start_all_time = 0
+
+        self.start_utxo = 0
+        self.all_utxo = 0
+
+        self.start_jiexi = 0
+        self.all_jiexi = 0
+
+        self.start_transfer = 0
+        self.all_transfer = 0
+
+        self.start_mint = 0
+        self.all_mint = 0
+
+        self.start_create = 0
+        self.all_create = 0
+
+        self.start_dat = 0
+        self.all_dat = 0
+
+        self.start_check = 0
+        self.all_check = 0
+    def print_detail(self,height):
+        print(f'scf-ms ts={datetime.now().strftime("%Y-%m-%d %H:%M:%S")} height={height} '
+              f'all={(time.time()-self.start_all_time)*1000:.2f} '
+              f'utxo={self.all_utxo*1000:.2f} '
+              f'jiexi={self.all_jiexi*1000:.2f} '
+              f'transfer={self.all_transfer*1000:.2f} '
+              f'mint={self.all_mint*1000:.2f} '
+              f'create={self.all_create*1000:.2f} '
+              f'dat={self.all_dat*1000:.2f} '
+              f'check={self.all_check*1000:.2f} ')
+        self.clear()
+
+
+tm=TimeManager()
 
 class BlockProcessor:
     '''Process blocks and update the DB state to match.
@@ -2772,6 +2874,7 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
+        tm.all_start()
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
@@ -2818,6 +2921,7 @@ class BlockProcessor:
         distmint_ticker_cache = {}
         dft_count = 0
         for tx, tx_hash in txs:
+            tm.utxo_start()
             has_at_least_one_valid_atomicals_operation = False
             hashXs = []
             append_hashX = hashXs.append
@@ -2858,9 +2962,10 @@ class BlockProcessor:
                 hashX = self.coin.hashX_from_script(txout.pk_script)
                 append_hashX(hashX)
                 put_utxo(tx_hash + to_le_uint32(idx), hashX + tx_numb + to_le_uint64(txout.value))
-            
+            tm.utxo_end()
             # Only create Atomicals if the activation height is reached
             if self.is_atomicals_activated(height):
+                tm.jiexi_start()
                 # Save the tx number for the current tx
                 # This index is used to lookup the height of a commit tx when minting an atomical
                 # For example if the reveal of a realm/container/ticker mint is greater than 
@@ -2879,7 +2984,8 @@ class BlockProcessor:
                     reveal_location_txid = atomicals_operations_found_at_inputs['reveal_location_txid']
                     reveal_location_index = atomicals_operations_found_at_inputs['reveal_location_index']
                     self.logger.debug(f'advance_txs: atomicals_operations_found_at_inputs operation_found={operation_found}, operation_input_index={operation_input_index}, size_payload={size_payload}, tx_hash={hash_to_hex_str(tx_hash)}, commit_txid={hash_to_hex_str(commit_txid)}, commit_index={commit_index}, reveal_location_txid={hash_to_hex_str(reveal_location_txid)}, reveal_location_index={reveal_location_index}')
-                
+                tm.jiexi_end()
+                tm.transfer_start()
                 # Color the outputs of any transferred NFT/FT atomicals according to the rules
                 atomical_ids_transferred = self.color_atomicals_outputs(atomicals_operations_found_at_inputs, atomicals_spent_at_inputs, tx, tx_hash, tx_num, height, is_unspendable)
                 for atomical_id in atomical_ids_transferred:
@@ -2887,10 +2993,10 @@ class BlockProcessor:
                     self.logger.debug(f'advance_txs: color_atomicals_outputs atomical_ids_transferred. atomical_id={atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
                     # Double hash the atomical_id to add it to the history to leverage the existing history db for all operations involving the atomical
                     append_hashX(double_sha256(atomical_id))
-                
+                tm.transfer_end()
                 # Track whether we encountered a valid operation so we can skip other steps in the processing pipeline for efficiency
                 already_found_valid_operation = False
-                
+                tm.mint_start()
                 atomical_id_of_distmint = self.create_or_delete_decentralized_mint_output(atomicals_operations_found_at_inputs, tx_num, tx_hash, tx, height, distmint_ticker_cache, False)
                 if atomical_id_of_distmint:
                     dft_count += 1
@@ -2903,7 +3009,8 @@ class BlockProcessor:
                     
                     if dft_count % 100 == 0:
                         self.logger.info(f'height={height}, dft_count={dft_count}')
-          
+                tm.mint_end()
+                tm.create_start()
                 # Create NFT/FT atomicals if it is defined in the tx
                 if not already_found_valid_operation:
                     created_atomical_id = self.create_or_delete_atomical(atomicals_operations_found_at_inputs, atomicals_spent_at_inputs, header, height, tx_num, atomical_num, tx, tx_hash, False)
@@ -2914,7 +3021,8 @@ class BlockProcessor:
                         # Double hash the created_atomical_id to add it to the history to leverage the existing history db for all operations involving the atomical
                         append_hashX(double_sha256(created_atomical_id))
                         self.logger.debug(f'advance_txs: create_or_delete_atomical created_atomical_id atomical_id={created_atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
-
+                tm.create_end()
+                tm.dat_start()
                 # Check if there were any regular 'dat' files definitions
                 if not already_found_valid_operation:
                     if self.create_or_delete_data_location(tx_hash, atomicals_operations_found_at_inputs):
@@ -2945,11 +3053,11 @@ class BlockProcessor:
 
                 if has_at_least_one_valid_atomicals_operation:
                     put_general_data(b'th' + pack_le_uint32(height) + pack_le_uint64(tx_num) + tx_hash, tx_hash)
-                    
+                tm.dat_end()
             append_hashXs(hashXs)
             update_touched(hashXs)
             tx_num += 1
-
+        tm.check_start()
         # dft mint sanity check here
         # Because we are using a cache of the minted dfts from the db
         # We track all the mints of a dft for their atomical ids and then perform one final lookup going straight to db as well
@@ -2966,7 +3074,9 @@ class BlockProcessor:
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(b''.join(concatenation_of_tx_hashes_with_valid_atomical_operation))
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
-            self.logger.info(f'height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')   
+            tm.check_end()
+            self.logger.info(f'height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
+            tm.print_detail(height)
         
         return undo_info, atomicals_undo_info
     
