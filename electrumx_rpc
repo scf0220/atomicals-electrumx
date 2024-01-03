@@ -116,6 +116,7 @@ def main():
 
     # 创建DataFrame
     df = pd.DataFrame(data)
+    df.to_excel('output.xlsx', index=False)
 
 
 if __name__ == '__main__':
